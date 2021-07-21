@@ -866,17 +866,20 @@ static void ge_double_scalarmult_vartime(ge_p2 *r, const uint8_t *a,
   }
 }
 
-static void x25519_scalar_mult_generic(uint8_t out[32],
+static void x25519_scalar_mult_generic_clampflag(uint8_t out[32],
                                        const uint8_t scalar[32],
-                                       const uint8_t point[32]) {
+                                       const uint8_t point[32],
+                                       const int prevent_clamping) {
   fe x1, x2, z2, x3, z3, tmp0, tmp1;
   fe_loose x2l, z2l, x3l, tmp0l, tmp1l;
 
   uint8_t e[32];
   memcpy(e, scalar, 32);
-  e[0] &= 248;
-  e[31] &= 127;
-  e[31] |= 64;
+  if (1 == prevent_clamping) {
+    e[0] &= 248;
+    e[31] &= 127;
+    e[31] |= 64;
+  }
 
   // The following implementation was transcribed to Coq and proven to
   // correspond to unary scalar multiplication in affine coordinates given that
@@ -946,6 +949,12 @@ static void x25519_scalar_mult_generic(uint8_t out[32],
   fe_invert(&z2, &z2);
   fe_mul_ttt(&x2, &x2, &z2);
   fe_tobytes(out, &x2);
+}
+
+static void x25519_scalar_mult_generic(uint8_t out[32],
+                                       const uint8_t scalar[32],
+                                       const uint8_t point[32]) {
+  x25519_scalar_mult_generic_clampflag(out, scalar, point, 0);
 }
 
 // Low-level intrinsic operations
@@ -1808,6 +1817,13 @@ CAMLprim value mc_x25519_scalar_mult_generic(value out, value scalar, value soff
 {
   CAMLparam5(out, scalar, soff, point, poff);
   x25519_scalar_mult_generic(Caml_ba_data_val(out), _ba_uint8_off(scalar, soff), _ba_uint8_off(point, poff));
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value mc_x25519_scalar_mult_generic_unclamped(value out, value scalar, value soff, value point, value poff)
+{
+  CAMLparam5(out, scalar, soff, point, poff);
+  x25519_scalar_mult_generic_clampflag(Caml_ba_data_val(out), _ba_uint8_off(scalar, soff), _ba_uint8_off(point, poff), 1);
   CAMLreturn(Val_unit);
 }
 

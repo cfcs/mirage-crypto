@@ -145,7 +145,10 @@ module P384 : Dh_dsa
 module P521 : Dh_dsa
 
 (** Curve 25519 Diffie-Hellman, also known as X25519. *)
-module X25519 : Dh
+module X25519 : sig
+  include Dh
+  val unclamped_scalar_mult : scalar:Cstruct.t -> point:Cstruct.t -> Cstruct.t
+end
 
 (** Curve 25519 DSA, also known as Ed25519. *)
 module Ed25519 : sig

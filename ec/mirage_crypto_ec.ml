@@ -786,12 +786,19 @@ end
 module X25519 = struct
   (* RFC 7748 *)
   external x25519_scalar_mult_generic : Cstruct.buffer -> Cstruct.buffer -> int -> Cstruct.buffer -> int -> unit = "mc_x25519_scalar_mult_generic" [@@noalloc]
+  external x25519_scalar_mult_generic_unclamped : Cstruct.buffer -> Cstruct.buffer -> int -> Cstruct.buffer -> int -> unit = "mc_x25519_scalar_mult_generic_unclamped" [@@noalloc]
 
   let key_len = 32
 
   let scalar_mult in_ base =
     let out = Cstruct.create key_len in
     x25519_scalar_mult_generic out.Cstruct.buffer
+      in_.Cstruct.buffer in_.Cstruct.off base.Cstruct.buffer base.Cstruct.off;
+    out
+
+  let unclamped_scalar_mult ~scalar:in_ ~point:base =
+    let out = Cstruct.create key_len in
+    x25519_scalar_mult_generic_unclamped out.Cstruct.buffer
       in_.Cstruct.buffer in_.Cstruct.off base.Cstruct.buffer base.Cstruct.off;
     out
 
